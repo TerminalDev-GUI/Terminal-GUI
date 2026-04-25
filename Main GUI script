@@ -1,0 +1,228 @@
+--[[
+	WARNING: Heads up! This script has not been verified by ScriptBlox. Use at your own risk!
+]]
+--[=[
+ @TerminalDev
+ SUPPORTED DELTA, XENO, XEVON, ARCEUS, VEGA X
+]=]
+
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+local Lighting = game:GetService("Lighting")
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local gethui = get_hidden_gui or gethui or function() return game:GetService("CoreGui") end
+
+local hue, isMin, mainSize = 0, false, UDim2.new(0, 340, 0, 194)
+local lp = Players.LocalPlayer
+local noclip, flying, spinEnabled = false, false, false
+local flySpeed = 70
+
+-- 1. SOUND SYSTEM
+local Music = Instance.new("Sound", game:GetService("SoundService"))
+Music.SoundId = "rbxassetid://1837879082" 
+Music.Volume = 0.5
+Music.Looped = true
+
+local function AddCorner(parent, radius)
+	local c = Instance.new("UICorner", parent)
+	c.CornerRadius = radius or UDim.new(0, 6)
+end
+
+-- 2. MAIN GUI BUILDER
+local function OpenGUI()
+	local Screen = Instance.new("ScreenGui", gethui())
+	local Main = Instance.new("Frame", Screen)
+	Main.Name = "MainFrame"; Main.BackgroundColor3 = Color3.fromRGB(5, 5, 5)
+	Main.BackgroundTransparency = 0.22; Main.AnchorPoint = Vector2.new(0.5, 0.5)
+	Main.Size, Main.Position = mainSize, UDim2.fromScale(0.5, 0.5)
+	
+	local Stroke = Instance.new("UIStroke", Main)
+	Stroke.Thickness, Stroke.ApplyStrokeMode = 3, 1
+	AddCorner(Main, UDim.new(0, 8))
+	Instance.new("UIDragDetector", Main)
+	
+	local Title = Instance.new("TextLabel", Main)
+	Title.Size, Title.Position = UDim2.new(1, -40, 0, 35), UDim2.fromOffset(10, 0)
+	Title.BackgroundTransparency, Title.Font = 1, Enum.Font.Code
+	Title.Text, Title.TextSize, Title.TextXAlignment = "TERMINAL GUI", 15, 0
+
+	local btn = Instance.new("TextButton", Main)
+	btn.Size, btn.Position = UDim2.fromOffset(30, 30), UDim2.new(1, -35, 0, 5)
+	btn.BackgroundTransparency, btn.Font, btn.Text, btn.TextSize = 1, 3, ">_", 18
+	AddCorner(btn)
+
+	local TabContainer = Instance.new("Frame", Main)
+	TabContainer.Size, TabContainer.Position = UDim2.new(0, 70, 1, -45), UDim2.fromOffset(5, 40)
+	TabContainer.BackgroundTransparency = 1
+
+	local PageContainer = Instance.new("ScrollingFrame", Main)
+	PageContainer.Size, PageContainer.Position = UDim2.new(1, -85, 1, -45), UDim2.fromOffset(80, 40)
+	PageContainer.BackgroundTransparency, PageContainer.BorderSizePixel, PageContainer.ScrollBarThickness = 1, 0, 2
+	PageContainer.AutomaticCanvasSize = Enum.AutomaticSize.Y
+
+	local function AddButton(txt, func)
+		local b = Instance.new("TextButton", PageContainer)
+		b.Size, b.Text, b.Font, b.TextSize = UDim2.new(1, -5, 0, 22), txt, 3, 11
+		b.BackgroundColor3, b.BackgroundTransparency, b.TextColor3 = Color3.new(0.2, 0.2, 0.2), 0.5, Color3.new(1,1,1)
+		AddCorner(b, UDim.new(0, 4))
+		b.MouseButton1Click:Connect(func)
+	end
+
+	local function NewTab(name, offset, callback)
+		local t = Instance.new("TextButton", TabContainer)
+		t.Size, t.Position = UDim2.new(1, 0, 0, 20), UDim2.fromOffset(0, offset)
+		t.BackgroundTransparency, t.Font, t.Text, t.TextSize = 0.8, 3, "["..name.."]", 11
+		t.TextColor3 = Color3.new(1,1,1)
+		AddCorner(t)
+		t.MouseButton1Click:Connect(callback)
+	end
+
+	-- [TAB: EXEC]
+	NewTab("EXEC", 0, function()
+		PageContainer:ClearAllChildren()
+		local Layout = Instance.new("UIListLayout", PageContainer); Layout.Padding = UDim.new(0, 5)
+		local CodeBox = Instance.new("TextBox", PageContainer)
+		CodeBox.Size = UDim2.new(1, -5, 0, 100); CodeBox.BackgroundColor3 = Color3.new(0,0,0)
+		CodeBox.TextColor3, CodeBox.Font, CodeBox.TextSize = Color3.new(0, 1, 0), 3, 11
+		CodeBox.Text, CodeBox.MultiLine, CodeBox.ClearTextOnFocus = "-- Built-in Executor", true, false
+		CodeBox.TextXAlignment, CodeBox.TextYAlignment = 0, 0; AddCorner(CodeBox)
+		AddButton("RUN SCRIPT", function() pcall(function() loadstring(CodeBox.Text)() end) end)
+	end)
+
+	-- [TAB: TP]
+	NewTab("TP", 25, function() 
+		PageContainer:ClearAllChildren()
+		local Layout = Instance.new("UIListLayout", PageContainer); Layout.Padding = UDim.new(0, 5)
+		for _, p in pairs(Players:GetPlayers()) do
+			if p ~= lp then
+				AddButton("> "..p.DisplayName:sub(1,15), function()
+					if p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+						lp.Character.HumanoidRootPart.CFrame = p.Character.HumanoidRootPart.CFrame
+					end
+				end)
+			end
+		end
+	end)
+
+	-- [TAB: MOVE]
+	NewTab("MOVE", 50, function()
+		PageContainer:ClearAllChildren()
+		local Layout = Instance.new("UIListLayout", PageContainer); Layout.Padding = UDim.new(0, 8)
+		local function CreateSlider(name, min, max, default, callback)
+			local SBack = Instance.new("Frame", PageContainer); SBack.Size, SBack.BackgroundColor3 = UDim2.new(1, -10, 0, 25), Color3.new(0.1, 0.1, 0.1); AddCorner(SBack)
+			local SFill = Instance.new("Frame", SBack); SFill.Size, SFill.BackgroundColor3, SFill.BackgroundTransparency = UDim2.fromScale((default-min)/(max-min), 1), Color3.new(1,1,1), 0.5; AddCorner(SFill)
+			local STxt = Instance.new("TextLabel", SBack); STxt.Size, STxt.Text, STxt.Font, STxt.TextSize, STxt.TextColor3 = UDim2.fromScale(1,1), name..": "..default, 3, 11, Color3.new(1,1,1); STxt.BackgroundTransparency = 1
+			SBack.InputBegan:Connect(function(input)
+				if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+					local move; move = UserInputService.InputChanged:Connect(function(input)
+						if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+							local percent = math.clamp((input.Position.X - SBack.AbsolutePosition.X) / SBack.AbsoluteSize.X, 0, 1)
+							local val = math.floor(min + (percent * (max - min)))
+							SFill.Size, STxt.Text = UDim2.fromScale(percent, 1), name..": "..val
+							callback(val)
+						end
+					end)
+					UserInputService.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then move:Disconnect() end end)
+				end
+			end)
+		end
+		CreateSlider("WS", 16, 250, 16, function(v) if lp.Character:FindFirstChild("Humanoid") then lp.Character.Humanoid.WalkSpeed = v end end)
+		CreateSlider("GRAV", 0, 400, 196, function(v) workspace.Gravity = v end)
+		AddButton("FLY: ADMIN WASD", function()
+			flying = not flying; local hum, root = lp.Character.Humanoid, lp.Character.HumanoidRootPart
+			if flying then
+				hum.PlatformStand = true; local bg = Instance.new("BodyGyro", root); bg.P = 9e4; bg.MaxTorque = Vector3.new(9e9,9e9,9e9); bg.CFrame = root.CFrame
+				local bv = Instance.new("BodyVelocity", root); bv.Velocity, bv.MaxForce = Vector3.new(0,0,0), Vector3.new(9e9,9e9,9e9)
+				task.spawn(function()
+					while flying and root.Parent do
+						local up = (UserInputService:IsKeyDown(Enum.KeyCode.Space) and 1 or 0) - (UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) and 1 or 0)
+						bv.Velocity = (hum.MoveDirection * flySpeed) + Vector3.new(0, up * flySpeed, 0)
+						bg.CFrame = workspace.CurrentCamera.CFrame; task.wait()
+					end
+					bv:Destroy(); bg:Destroy(); hum.PlatformStand = false
+				end)
+			else hum.PlatformStand = false end
+		end)
+		AddButton("NOCLIP: TOGGLE", function() noclip = not noclip end)
+		AddButton("INF JUMP", function() UserInputService.JumpRequest:Connect(function() if lp.Character:FindFirstChild("Humanoid") then lp.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping) end end) end)
+	end)
+
+	-- [TAB: VIS]
+	NewTab("VIS", 75, function()
+		PageContainer:ClearAllChildren()
+		local Layout = Instance.new("UIListLayout", PageContainer); Layout.Padding = UDim.new(0, 5)
+		AddButton("PLAYER ESP", function()
+			for _, p in pairs(Players:GetPlayers()) do
+				if p ~= lp and p.Character then
+					local h = p.Character:FindFirstChildOfClass("Highlight") or Instance.new("Highlight", p.Character)
+					h.FillColor = Color3.fromHSV(hue, 1, 1)
+				end
+			end
+		end)
+		AddButton("CLEAR ESP", function()
+			for _, p in pairs(Players:GetPlayers()) do if p.Character and p.Character:FindFirstChildOfClass("Highlight") then p.Character:FindFirstChildOfClass("Highlight"):Destroy() end end
+		end)
+		AddButton("SPIN BOT", function() spinEnabled = not spinEnabled end)
+		AddButton("TOGGLE MUSIC (CRINGEDX)", function() if Music.IsPlaying then Music:Stop() else Music:Play() end end)
+	end)
+
+	-- [GLOBAL LOOPS]
+	RunService.Stepped:Connect(function()
+		if noclip and lp.Character then for _, v in pairs(lp.Character:GetDescendants()) do if v:IsA("BasePart") then v.CanCollide = false end end end
+	end)
+	RunService.RenderStepped:Connect(function(dt)
+		hue = (hue + dt * 1.5) % 1
+		local c = Color3.fromHSV(hue, 1, 1)
+		Stroke.Color, Title.TextColor3, btn.TextColor3 = c, c, c
+		if spinEnabled and lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
+			lp.Character.HumanoidRootPart.CFrame *= CFrame.Angles(0, math.rad(45), 0)
+		end
+	end)
+	UserInputService.InputBegan:Connect(function(input, gpe)
+		if not gpe and input.KeyCode == Enum.KeyCode.LeftAlt then Screen.Enabled = not Screen.Enabled end
+	end)
+
+	-- Particles & Minimize
+	task.spawn(function()
+		while task.wait(0.06) do
+			if isMin or not Main.Parent then continue end
+			local p = Instance.new("Frame", Main); p.Size, p.ZIndex, p.BackgroundColor3 = UDim2.fromOffset(4, 4), Main.ZIndex - 1, Color3.fromHSV(hue, 1, 1)
+			p.Position = UDim2.fromScale(math.random() > 0.5 and (math.random() > 0.5 and 1 or 0) or math.random(), math.random())
+			AddCorner(p, UDim.new(1, 0))
+			local d = (Vector2.new(p.Position.X.Scale - 0.5, p.Position.Y.Scale - 0.5)).Unit * 220
+			task.spawn(function()
+				for i = 0, 1, 0.05 do p.Position, p.BackgroundTransparency = p.Position + UDim2.fromOffset(d.X * 0.05, d.Y * 0.05), i; task.wait() end; p:Destroy()
+			end)
+		end
+	end)
+	btn.MouseButton1Click:Connect(function()
+		isMin = not isMin
+		TweenService:Create(Main, TweenInfo.new(0.4), {Size = isMin and UDim2.new(0, 340, 0, 35) or mainSize}):Play()
+		TabContainer.Visible, PageContainer.Visible = not isMin, not isMin
+		btn.Text = isMin and "[+]" or ">_"
+	end)
+end
+
+-- 3. STAR BOOTLOADER
+local function Start()
+	Music:Play()
+	local blur = Instance.new("BlurEffect", Lighting); blur.Size = 0
+	TweenService:Create(blur, TweenInfo.new(0.5), {Size = 25}):Play()
+	local IG = Instance.new("ScreenGui", gethui())
+	local IF = Instance.new("Frame", IG); IF.AnchorPoint, IF.Size, IF.Position, IF.BackgroundTransparency = Vector2.new(0.5, 0.5), UDim2.fromScale(1, 1), UDim2.fromScale(0.5, 0.5), 1
+	local Star = Instance.new("TextLabel", IF); Star.AnchorPoint, Star.Position, Star.Size, Star.BackgroundTransparency, Star.Font, Star.Text = Vector2.new(0.5, 0.5), UDim2.fromScale(0.5, 0.45), UDim2.fromOffset(0, 0), 1, 3, "★"
+	Star.TextScaled = true
+	local IT = Instance.new("TextLabel", IF); IT.AnchorPoint, IT.Size, IT.Position, IT.BackgroundTransparency, IT.Font, IT.TextColor3, IT.TextSize = Vector2.new(0.5, 0.5), UDim2.new(1, 0, 0, 20), UDim2.fromScale(0.5, 0.6), 1, 3, Color3.new(0, 1, 0), 14
+	TweenService:Create(Star, TweenInfo.new(0.7, 6), {Size = UDim2.fromOffset(130, 130)}):Play()
+	task.spawn(function() local h = 0 while Star.Parent do h = (h + 0.02) % 1; Star.Rotation += 4; Star.TextColor3 = Color3.fromHSV(h, 1, 1); task.wait() end end)
+	for _, l in pairs({"> INITIALIZING...", "> BOOTING_AUDIO...", "> READY."}) do
+		for i = 1, #l do IT.Text = l:sub(1, i) .. "_" task.wait(0.02) end
+		task.wait(0.3)
+	end
+	local c = TweenService:Create(Star, TweenInfo.new(0.4), {Size = UDim2.fromOffset(0, 0)})
+	c:Play(); TweenService:Create(blur, TweenInfo.new(0.4), {Size = 0}):Play()
+	c.Completed:Connect(function() blur:Destroy(); IG:Destroy(); OpenGUI() end)
+end
+
+task.spawn(Start)
