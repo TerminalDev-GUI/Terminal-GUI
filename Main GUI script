@@ -18,7 +18,7 @@ local flySpeed = 70
 
 -- 1. SOUND SYSTEM
 local Music = Instance.new("Sound", game:GetService("SoundService"))
-Music.SoundId = "rbxassetid://1837879082" 
+Music.SoundId = "rbxassetid://140217156671610" 
 Music.Volume = 0.5
 Music.Looped = true
 
@@ -162,7 +162,7 @@ local function OpenGUI()
 			for _, p in pairs(Players:GetPlayers()) do if p.Character and p.Character:FindFirstChildOfClass("Highlight") then p.Character:FindFirstChildOfClass("Highlight"):Destroy() end end
 		end)
 		AddButton("SPIN BOT", function() spinEnabled = not spinEnabled end)
-		AddButton("TOGGLE MUSIC (CRINGEDX)", function() if Music.IsPlaying then Music:Stop() else Music:Play() end end)
+		AddButton("TOGGLE MUSIC (COOOOL!)", function() if Music.IsPlaying then Music:Stop() else Music:Play() end end)
 	end)
 
 	-- [GLOBAL LOOPS]
