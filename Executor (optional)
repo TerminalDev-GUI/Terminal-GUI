@@ -1,0 +1,182 @@
+--[=[
+    VOID_CORE // TITLE_RETURNED // @uniquadev
+    Unified Subspace Tripmine Terminal Framework
+]=]
+
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local gethui = get_hidden_gui or gethui or function() return game:GetService("CoreGui") end
+
+local VOID = { particles = {}, minimized = false, hue = 0, hovering = false }
+local mainSize, minSize = UDim2.fromOffset(450, 280), UDim2.fromOffset(450, 35)
+
+local function AddCorner(parent, rad)
+    local c = Instance.new("UICorner", parent)
+    c.CornerRadius = UDim.new(0, rad or 8)
+end
+
+function VOID:Build()
+    local Screen = Instance.new("ScreenGui", gethui())
+    Screen.Name = "VoidCore_Final"; Screen.IgnoreGuiInset = true; Screen.DisplayOrder = 999
+    
+    local Main = Instance.new("Frame", Screen)
+    Main.Name = "MainFrame"; Main.Size = mainSize; Main.Position = UDim2.fromScale(0.5, 0.5)
+    Main.AnchorPoint = Vector2.new(0.5, 0.5); Main.BackgroundColor3 = Color3.new(0, 0, 0); Main.ClipsDescendants = true
+    Main.Active = true
+    AddCorner(Main)
+
+    local Stroke = Instance.new("UIStroke", Main); Stroke.Thickness = 2; Stroke.ApplyStrokeMode = 1
+
+    -- 1. THE RETURNED TITLE
+    local Title = Instance.new("TextLabel", Main)
+    Title.Name = "TitleText"
+    Title.Text = " TERMINAL // VOID_CORE"
+    Title.Size = UDim2.new(1, -60, 0, 35)
+    Title.Position = UDim2.fromOffset(12, 0)
+    Title.BackgroundTransparency = 1
+    Title.TextColor3 = Color3.new(1, 1, 1)
+    Title.Font = Enum.Font.Code
+    Title.TextSize = 14
+    Title.TextXAlignment = Enum.TextXAlignment.Left
+    Title.ZIndex = 10
+
+    -- 2. MINIMIZE BUTTON
+    local MinBtn = Instance.new("TextButton", Main)
+    MinBtn.Name = "MinimizeButton"
+    MinBtn.Size = UDim2.fromOffset(25, 25)
+    MinBtn.Position = UDim2.new(1, -35, 0, 5)
+    MinBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+    MinBtn.BackgroundTransparency = 0.4
+    MinBtn.Text, MinBtn.TextColor3, MinBtn.TextSize = "-", Color3.new(1,1,1), 18
+    MinBtn.Font = Enum.Font.Code; MinBtn.ZIndex = 10
+    AddCorner(MinBtn, 4)
+
+    -- Container for elements that hide when minimized
+    local BodyContainer = Instance.new("Frame", Main)
+    BodyContainer.Name = "BodyContainer"
+    BodyContainer.Size = UDim2.new(1, 0, 1, -35)
+    BodyContainer.Position = UDim2.fromOffset(0, 35)
+    BodyContainer.BackgroundTransparency = 1
+    BodyContainer.ZIndex = 5
+
+    MinBtn.MouseButton1Click:Connect(function()
+        VOID.minimized = not VOID.minimized
+        local target = VOID.minimized and minSize or mainSize
+        BodyContainer.Visible = not VOID.minimized
+        TweenService:Create(Main, TweenInfo.new(0.2, Enum.EasingStyle.Sine), {Size = target}):Play()
+        MinBtn.Text = VOID.minimized and "+" or "-"
+    end)
+    
+    MinBtn.MouseEnter:Connect(function() VOID.hovering = true end)
+    MinBtn.MouseLeave:Connect(function() VOID.hovering = false end)
+
+    -- Particles Layer
+    local Visuals = Instance.new("Frame", Main)
+    Visuals.Size, Visuals.BackgroundTransparency, Visuals.ZIndex, Visuals.Active = UDim2.fromScale(1, 1), 1, 1, false
+    for i = 1, 40 do 
+        local p = Instance.new("Frame", Visuals)
+        p.Size = UDim2.fromOffset(1, 1)
+        p.BackgroundColor3, p.BackgroundTransparency = Color3.new(1, 1, 1), 0.6
+        table.insert(VOID.particles, {obj = p, pos = Vector2.new(math.random(0, 100)/100, math.random(0, 100)/100), speed = math.random(10, 30)/100})
+    end
+
+    -- RESTORED: Subspace Tripmine Image Asset Integration
+    local SubspaceImg = Instance.new("ImageLabel", BodyContainer)
+    SubspaceImg.Name = "SubspaceTripmine"
+    SubspaceImg.Size = UDim2.fromOffset(60, 60)
+    SubspaceImg.Position = UDim2.new(1, -75, 0, 10)
+    SubspaceImg.Image = "rbxassetid://18832439007"
+    SubspaceImg.BackgroundTransparency = 1
+    SubspaceImg.ZIndex = 6
+
+    -- RESTORED: TextBox Code Console Editor Workspace
+    local Editor = Instance.new("TextBox", BodyContainer)
+    Editor.Name = "CodeEditor"
+    Editor.Size = UDim2.new(1, -30, 1, -85)
+    Editor.Position = UDim2.fromOffset(15, 80)
+    Editor.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+    Editor.TextColor3 = Color3.fromRGB(140, 83, 255)
+    Editor.PlaceholderText = "Type here to execute via VoidCore..."
+    Editor.Text = ""
+    Editor.MultiLine = true
+    Editor.ClearTextOnFocus = false
+    Editor.TextSize = 12
+    Editor.Font = Enum.Font.Code
+    Editor.TextXAlignment = Enum.TextXAlignment.Left
+    Editor.TextYAlignment = Enum.TextYAlignment.Top
+    AddCorner(Editor, 6)
+
+    local EditorStroke = Instance.new("UIStroke", Editor)
+    EditorStroke.Thickness = 1
+    EditorStroke.Color = Color3.fromRGB(45, 45, 45)
+
+    -- RESTORED: Code Execution Button Interface Terminal
+    local ExecBtn = Instance.new("TextButton", BodyContainer)
+    ExecBtn.Name = "ExecuteButton"
+    ExecBtn.Size = UDim2.fromOffset(120, 30)
+    ExecBtn.Position = UDim2.fromOffset(15, 25)
+    ExecBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    ExecBtn.Text = "EXECUTE SCRIPT"
+    ExecBtn.TextColor3 = Color3.new(1, 1, 1)
+    ExecBtn.Font = Enum.Font.Code
+    ExecBtn.TextSize = 12
+    ExecBtn.ZIndex = 6
+    AddCorner(ExecBtn, 6)
+
+    local ExecStroke = Instance.new("UIStroke", ExecBtn)
+    ExecStroke.Thickness = 1
+
+    ExecBtn.MouseEnter:Connect(function() VOID.hovering = true end)
+    ExecBtn.MouseLeave:Connect(function() VOID.hovering = false end)
+
+    -- Execution Pipeline Trigger Matrix
+    ExecBtn.MouseButton1Click:Connect(function()
+        local code = Editor.Text
+        local success, func = pcall(loadstring, code)
+        if success and type(func) == "function" then
+            task.spawn(func)
+        else
+            warn("VoidCore Exec Error: " .. tostring(func or "Compilation failed"))
+        end
+    end)
+
+    -- Cursor & Dragging
+    local Cursor = Instance.new("Frame", Screen)
+    Cursor.Size, Cursor.AnchorPoint = UDim2.fromOffset(8, 8), Vector2.new(0.5, 0.5)
+    Cursor.BackgroundColor3, Cursor.Active, Cursor.ZIndex = Color3.new(0, 0, 0), false, 1000
+    AddCorner(Cursor, 10); UserInputService.MouseIconEnabled = false
+    local CursorStroke = Instance.new("UIStroke", Cursor); CursorStroke.Thickness = 1.5
+
+    local dragging, dragStart, startPos
+    Main.InputBegan:Connect(function(input)
+        if (input.UserInputType == Enum.UserInputType.MouseButton1) and not VOID.hovering then
+            dragging = true; dragStart = UserInputService:GetMouseLocation(); startPos = Main.Position
+        end
+    end)
+    UserInputService.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end end)
+
+    RunService.RenderStepped:Connect(function(dt)
+        local mPos = UserInputService:GetMouseLocation()
+        Cursor.Position = UDim2.fromOffset(mPos.X, mPos.Y)
+        VOID.hue = (VOID.hue + 0.003) % 1
+        local rainColor = Color3.fromHSV(VOID.hue, 0.6, 1)
+        Stroke.Color, CursorStroke.Color, ExecStroke.Color = rainColor, rainColor, rainColor
+        Cursor.Size = Cursor.Size:Lerp(VOID.hovering and UDim2.fromOffset(14, 14) or UDim2.fromOffset(8, 8), 0.3)
+
+        for _, p in pairs(VOID.particles) do
+            p.pos = Vector2.new(p.pos.X, p.pos.Y - (p.speed * dt))
+            if p.pos.Y < -0.1 then p.pos = Vector2.new(math.random(0, 100)/100, 1.1) end
+            p.obj.Position = UDim2.fromScale(p.pos.X, p.pos.Y)
+        end
+
+        if dragging then
+            local delta = UserInputService:GetMouseLocation() - dragStart
+            Main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end)
+
+    return Main
+end
+
+local Main = VOID:Build()
