@@ -1,7 +1,7 @@
 --[=[
  @TerminalDev
  SUPPORTED DELTA, XENO, XEVON, ARCEUS, VEGA X
- Fixed Minimize Toggle System Active
+ Built-in TKILL Chaos System Active
 ]=]
 
 local RunService = game:GetService("RunService")
@@ -88,8 +88,6 @@ OpenGUI = function()
 	task.spawn(function()
 		while Main.Parent do
 			task.wait(0.08)
-			
-			-- FIX: Particles only spawn if the menu is fully expanded/visible
 			if Main.Visible and Main.AbsoluteSize.X > 0 and not isMin then
 				local P = Instance.new("TextLabel", Screen)
 				P.BackgroundTransparency = 1
@@ -150,22 +148,19 @@ OpenGUI = function()
 	PageContainer.BackgroundTransparency, PageContainer.BorderSizePixel, PageContainer.ScrollBarThickness = 1, 0, 2
 	PageContainer.AutomaticCanvasSize = Enum.AutomaticSize.Y
 
-	-- FIX: CONNECT THE MINIMIZE SYSTEM TO THE CLICK EVENT
 	btn.MouseButton1Click:Connect(function()
 		isMin = not isMin
 		if isMin then
-			-- Smoothly shrink down to a top bar menu
 			TweenService:Create(Main, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {Size = UDim2.new(0, 340, 0, 38)}):Play()
 			TabContainer.Visible = false
 			PageContainer.Visible = false
-			btn.Text = "[+]" -- Change symbol to look like a maximize option
+			btn.Text = "[+]"
 		else
-			-- Smoothly expand back out to full sizing template
 			TweenService:Create(Main, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {Size = mainSize}):Play()
-			task.wait(0.1) -- Small pause for the frame layout to animate open
+			task.wait(0.1)
 			TabContainer.Visible = true
 			PageContainer.Visible = true
-			btn.Text = ">_" -- Change icon back to code terminal style
+			btn.Text = ">_"
 		end
 	end)
 
@@ -260,7 +255,6 @@ OpenGUI = function()
 	NewTab("VIS", 75, function()
 		PageContainer:ClearAllChildren()
 		local Layout = Instance.new("UIListLayout", PageContainer); Layout.Padding = UDim.new(0, 5)
-		
 		AddButton("PLAYER ESP", function()
 			for _, v in pairs(Players:GetPlayers()) do
 				if v ~= lp and v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
@@ -274,6 +268,41 @@ OpenGUI = function()
 						Box.Color3 = Color3.fromRGB(140, 83, 255)
 						Box.Transparency = 0.5
 					end
+				end
+			end
+		end)
+	end)
+
+	-- NEW [TAB: TERROR] WITH BUILT-IN TKILL OPERATION
+	NewTab("TERROR", 100, function()
+		PageContainer:ClearAllChildren()
+		local Layout = Instance.new("UIListLayout", PageContainer); Layout.Padding = UDim.new(0, 5)
+		
+		AddButton("EXECUTE TKILL", function()
+			local char = lp.Character
+			local tool = char and char:FindFirstChildOfClass("Tool")
+			
+			if not tool then
+				print(">> TKILL: You must EQUIP a tool first!")
+				return
+			end
+			
+			local handle = tool:FindFirstChild("Handle") or tool:FindFirstChildByClass("TouchTransmitter")
+			if not handle then return end
+			
+			for _, v in pairs(Players:GetPlayers()) do
+				if v ~= lp and v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
+					task.spawn(function()
+						local enemyRoot = v.Character.HumanoidRootPart
+						for i = 1, 15 do
+							if handle.Parent and enemyRoot.Parent then
+								enemyRoot.CFrame = handle.CFrame
+								task.wait(0.01)
+							else
+								break
+							end
+						end
+					end)
 				end
 			end
 		end)
